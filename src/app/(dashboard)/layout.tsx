@@ -16,17 +16,19 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex transition-colors">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <Sidebar />
-      </div>
+      
+      {/* Sidebar dibiarkan bebas tanpa dibungkus div 'hidden' lagi! */}
+      {/* Biarkan komponen Sidebar yang mengatur dirinya sendiri mau muncul/sembunyi */}
+      <Sidebar />
       
       {/* Main Content Area */}
-      <div className="flex-1 md:ml-64 min-w-0">
+      {/* Ditambahkan pt-16 (padding-top) khusus di HP agar konten tidak tertutup tombol Hamburger */}
+      <div className="flex-1 md:ml-64 min-w-0 pt-16 md:pt-0">
         <main className="p-4 md:p-8">
           {children}
         </main>
       </div>
+
     </div>
   );
 }

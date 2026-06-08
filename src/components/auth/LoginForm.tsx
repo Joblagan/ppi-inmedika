@@ -43,17 +43,17 @@ export function LoginForm() {
   };
 
   return (
-    // Kartu Glassmorphism: Semi transparan, bayangan super lembut, sudut membulat elegan
     <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-white dark:border-slate-800 p-8 sm:p-10 transition-all">
       
-      {/* LOGO: Kotak melayang elegan */}
-      <div className="mx-auto w-24 h-24 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center p-3 mb-8">
+      {/* FIX: LOGO DIBUAT BORDERLESS & DIPERBESAR */}
+      <div className="flex justify-center mb-6">
         <Image 
           src={logoImage} 
           alt="Logo Inmedika" 
-          width={80} 
-          height={80} 
-          className="object-contain drop-shadow-sm" 
+          width={220} // Lebar dasar diperbesar ekstrem
+          height={100} // Tinggi dasar disesuaikan
+          // w-auto dan h-20/24 memastikan gambar tidak gepeng (maintain aspect ratio) di semua layar
+          className="object-contain h-20 sm:h-24 w-auto drop-shadow-md" 
           priority 
           unoptimized={true} 
         />

@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  USER_RUANGAN
+  VIEWER
+}
+
+enum SensusStatus {
+  PENDING_REVIEW
+  APPROVED
+}
+
+enum InfectionType {
+  VAP
+  IAD
+  ISK
+  PHLEBITIS
+  HAP
+  IDO
+  DEKUBITUS
+}
+
+enum AuditType {
+  HAND_HYGIENE
+  APD
+}
+
+model User {
+  id           String @id @default(uuid())
+  name         String
+  username     String @unique
+  passwordHash String
+  role         Role   @default(USER_RUANGAN)
+
+  roomId String?
+  room   Room?   @relation(fields: [roomId], references: [id])
+
+  sensusHarians SensusHarian[]
+  infections    InfectionIncident[]
+  audits        AuditKepatuhan[]
+  auditTrails   AuditTrail[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
+}
+
+model Room {
+  id   String @id @default(uuid())
+  name String @unique
+
+  users      User[]
+  sensus     SensusHarian[]
+  infections InfectionIncident[]
+  audits     AuditKepatuhan[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
+}
+
+enum ParameterCategory {
+  DEVICE
+  TINDAKAN
+}
+
+model MasterParameter {
+  id                String   @id @default(uuid())
+  nama              String   @unique
+  kategori          ParameterCategory
+  isAktif           Boolean  @default(true)
+  isBaseDenominator Boolean  @default(false)
+
+  sensusDetails SensusDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft Delete
+}
+
+model SensusHarian {
+  id     String   @id @default(uuid())
+  date   DateTime @db.Date
+  roomId String
+  room   Room     @relation(fields: [roomId], references: [id])
+
+  status SensusStatus @default(PENDING_REVIEW)
+
+  createdById  String
+  createdBy    User    @relation(fields: [createdById], references: [id])
+  approvedById String?
+
+  details SensusDetail[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
+
+  @@unique([date, roomId])
+}
+
+model SensusDetail {
+  id              String @id @default(uuid())
+  sensusHarianId  String
+  sensusHarian    SensusHarian @relation(fields: [sensusHarianId], references: [id], onDelete: Cascade)
+
+  parameterId     String
+  parameter       MasterParameter @relation(fields: [parameterId], references: [id])
+
+  value           Int @default(0)
+
+  @@unique([sensusHarianId, parameterId])
+}
+
+model InfectionIncident {
+  id     String   @id @default(uuid())
+  date   DateTime @db.Date
+  roomId String
+  room   Room     @relation(fields: [roomId], references: [id])
+
+  patientMrn  String
+  patientName String
+
+  infectionType InfectionType
+  description   String?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
+}
+
+model AuditKepatuhan {
+  id     String   @id @default(uuid())
+  date   DateTime @db.Date
+  roomId String
+  room   Room     @relation(fields: [roomId], references: [id])
+
+  auditType AuditType
+
+  // Tally Counter
+  peluang       Int @default(0) // Denominator: Momen yang harusnya patuh
+  tindakanBenar Int @default(0) // Numerator: Momen yang benar-benar patuh
+
+  notes String?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
+}
+
+model AuditTrail {
+  id        String @id @default(uuid())
+  modelName String // e.g., 'InfectionIncident', 'SensusHarian'
+  recordId  String
+  action    String // 'UPDATE', 'DELETE'
+
+  oldValue Json? // Snapshot of data before change
+  newValue Json? // Snapshot of data after change (null if DELETE)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  // No soft delete for Audit Trails as they are immutable logs.
+}

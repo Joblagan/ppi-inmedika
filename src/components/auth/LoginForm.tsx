@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { Lock, User, Loader2 } from "lucide-react";
 import Image from "next/image";
 
+// FIX: Static import untuk memastikan kompilator Webpack membaca file dengan benar
+import logoImage from "../../../public/logo.png"; 
+
 export function LoginForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -48,7 +51,16 @@ export function LoginForm() {
         <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
         
         <div className="relative z-10 flex justify-center mb-4">
-          <Image src="/logo.png" alt="Logo PPI" width={80} height={80} className="object-contain drop-shadow-xl" priority unoptimized={true} />
+          {/* FIX: Menggunakan variabel hasil static import */}
+          <Image 
+            src={logoImage} 
+            alt="Logo PPI" 
+            width={80} 
+            height={80} 
+            className="object-contain drop-shadow-xl" 
+            priority 
+            unoptimized={true} 
+          />
         </div>
         <h2 className="text-2xl font-bold text-white mb-1 relative z-10">PPI/IPCN System</h2>
         <p className="text-white/80 text-sm relative z-10">Sistem Surveilans Infeksi Rumah Sakit</p>

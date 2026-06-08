@@ -42,7 +42,8 @@ export function ComplianceBarChart({ data }: { data: { room: string; rate: numbe
             border: 'none',
             boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
           }}
-          formatter={(v: number) => [`${v}%`, "Tingkat Kepatuhan"]}
+          // Fallback type checking pada formatter untuk mencegah render error
+          formatter={(value: any) => [`${typeof value === 'number' ? value : 0}%`, "Tingkat Kepatuhan"]}
         />
         <Bar 
           dataKey="rate" 
@@ -72,19 +73,30 @@ export function HaisPieChart({ data }: { data: { name: string; value: number }[]
           nameKey="name" 
           cx="50%" 
           cy="50%" 
-          innerRadius={60} // Diubah jadi Donut Chart agar lebih modern
+          innerRadius={60} 
           outerRadius={90} 
           isAnimationActive={false} // WAJIB MATI UNTUK EXPORT PDF
-          label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }) => {
+          // FIX: Injeksi default fallback values & early return
+          label={({ 
+            cx = 0, 
+            cy = 0, 
+            midAngle = 0, 
+            innerRadius = 0, 
+            outerRadius = 0, 
+            percent = 0 
+          }) => {
+            if (percent === 0) return null;
+
             const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
             const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180));
             const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180));
             const pct = (percent * 100).toFixed(0);
-            return percent > 0 ? (
+
+            return (
               <text x={x} y={y} fill="white" fontSize={11} fontWeight="bold" textAnchor="middle" dominantBaseline="central">
                 {`${pct}%`}
               </text>
-            ) : null;
+            );
           }}
           labelLine={false}
         >

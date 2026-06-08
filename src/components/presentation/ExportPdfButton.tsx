@@ -11,28 +11,43 @@ export function ExportPdfButton({ targetId, monthLabel }: { targetId: string; mo
   const handleExport = async () => {
     setIsExporting(true);
     
-    try {
-      const element = document.getElementById(targetId);
-      if (!element) {
-        alert("Area laporan tidak ditemukan.");
-        return;
-      }
+    const element = document.getElementById(targetId);
+    if (!element) {
+      alert("Area laporan tidak ditemukan.");
+      setIsExporting(false);
+      return;
+    }
 
-      // 1. Gulung ke atas untuk mencegah bug potongan
+    // 1. SIMPAN STATE AWAL DOM (WAJIB untuk clean-up)
+    const originalWidth = element.style.width;
+    const originalMaxWidth = element.style.maxWidth;
+    const originalPadding = element.style.padding;
+    const originalBg = element.style.backgroundColor;
+    const isHtmlDark = document.documentElement.classList.contains("dark");
+    const isBodyDark = document.body.classList.contains("dark");
+
+    try {
+      // Gulung ke atas untuk mencegah bug potongan (blank nodes di html-to-image)
       window.scrollTo(0, 0);
 
-      // 2. Paksa elemen menjadi ukuran Desktop agar rapi
-      const originalWidth = element.style.width;
-      const originalMaxWidth = element.style.maxWidth;
+      // 2. TEMPORARY DOM MUTATION (Pengganti onclone)
+      // Matikan dark mode sementara
+      if (isHtmlDark) document.documentElement.classList.remove("dark");
+      if (isBodyDark) document.body.classList.remove("dark");
+
+      // Paksa elemen menjadi ukuran Desktop & sesuaikan padding untuk PDF
       element.style.width = "1200px";
       element.style.maxWidth = "1200px";
+      element.style.padding = "32px";
+      element.style.backgroundColor = "#ffffff";
 
-      // Beri jeda agar grafik Recharts menyesuaikan diri
+      // Beri jeda agar grafik Recharts menyesuaikan diri dengan lebar baru & CSS selesai repaint
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       const fullWidth = element.scrollWidth;
       const fullHeight = element.scrollHeight;
 
+      // 3. GENERATE IMAGE
       const dataUrl = await toPng(element, {
         quality: 1.0,
         pixelRatio: 2,
@@ -48,27 +63,13 @@ export function ExportPdfButton({ targetId, monthLabel }: { targetId: string; mo
           if (node.classList && node.classList.contains("no-print")) return false;
           return true;
         },
-        onclone: (clonedDoc) => {
-          clonedDoc.documentElement.classList.remove("dark");
-          clonedDoc.body.classList.remove("dark");
-          
-          const targetEl = clonedDoc.getElementById(targetId);
-          if (targetEl) {
-            targetEl.style.padding = "32px"; 
-            targetEl.style.backgroundColor = "#ffffff";
-          }
-        }
       });
-
-      // Kembalikan layar ke ukuran semula
-      element.style.width = originalWidth;
-      element.style.maxWidth = originalMaxWidth;
 
       const img = new Image();
       img.src = dataUrl;
       await new Promise((resolve) => { img.onload = resolve; });
 
-      // 3. SETTING PDF: Kita pakai Portrait karena dashboard memanjang ke bawah
+      // 4. SETTING PDF: Portrait
       const pdf = new jsPDF({
         orientation: "portrait", 
         unit: "mm",
@@ -77,23 +78,21 @@ export function ExportPdfButton({ targetId, monthLabel }: { targetId: string; mo
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10; // Margin putih 1 cm di setiap sisi kertas
+      const margin = 10; // 1 cm
 
-      // Hitung skala lebar gambar agar pas dengan lebar kertas A4
       const printWidth = pdfWidth - (margin * 2);
       const printHeight = (img.height * printWidth) / img.width;
 
       let heightLeft = printHeight;
       let position = margin;
 
-      // 4. CETAK HALAMAN PERTAMA
+      // 5. CETAK HALAMAN PERTAMA & AUTO MULTI-PAGE
       pdf.addImage(dataUrl, "PNG", margin, position, printWidth, printHeight);
-      heightLeft -= (pdfHeight - margin); // Kurangi dengan tinggi yang sudah dicetak
+      heightLeft -= (pdfHeight - margin);
 
-      // 5. AUTO MULTI-PAGE: Jika gambar masih panjang, tambah halaman baru otomatis!
       while (heightLeft > 0) {
-        position = position - pdfHeight; // Geser sisa gambar ke atas
-        pdf.addPage(); // Tambah Halaman 2, 3, dst
+        position = position - pdfHeight; 
+        pdf.addPage(); 
         pdf.addImage(dataUrl, "PNG", margin, position, printWidth, printHeight);
         heightLeft -= pdfHeight;
       }
@@ -104,6 +103,16 @@ export function ExportPdfButton({ targetId, monthLabel }: { targetId: string; mo
       console.error("Gagal mencetak PDF:", error);
       alert("Terjadi kesalahan teknis saat mengekspor laporan.");
     } finally {
+      // 6. SAFE RESTORATION (Mencegah Technical Debt & UI Crash)
+      // Apapun yang terjadi (berhasil atau error), kembalikan UI ke kondisi semula
+      element.style.width = originalWidth;
+      element.style.maxWidth = originalMaxWidth;
+      element.style.padding = originalPadding;
+      element.style.backgroundColor = originalBg;
+
+      if (isHtmlDark) document.documentElement.classList.add("dark");
+      if (isBodyDark) document.body.classList.add("dark");
+
       setIsExporting(false);
     }
   };

@@ -2,6 +2,7 @@ import { LoginForm } from "@/components/auth/LoginForm";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Image from "next/image";
 
 export const metadata = {
   title: "Login | Sistem Informasi PPI/IPCN",

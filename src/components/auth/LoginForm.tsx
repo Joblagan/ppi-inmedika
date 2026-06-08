@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Lock, User, Loader2 } from "lucide-react";
 import Image from "next/image";
 
-// FIX: Static import untuk memastikan kompilator Webpack membaca file dengan benar
+// Static import untuk menjamin keandalan resolusi path gambar saat build
 import logoImage from "../../../public/logo.png"; 
 
 export function LoginForm() {
@@ -34,7 +34,7 @@ export function LoginForm() {
         setError("Username atau password salah");
       } else {
         router.push("/");
-        router.refresh(); // Force refresh to get new session state
+        router.refresh();
       }
     } catch (err) {
       setError("Terjadi kesalahan sistem");
@@ -44,90 +44,95 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-      <div className="bg-[var(--primary)] px-8 py-10 text-center relative overflow-hidden">
-        {/* Abstract background shapes */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-        
-        <div className="relative z-10 flex justify-center mb-4">
-          {/* FIX: Menggunakan variabel hasil static import */}
+    <div className="w-full max-w-md mx-auto">
+      
+      {/* AREA BRANDING & LOGO (DI LUAR KOTAK - DIJAMIN JELAS DAN ELEGAN) */}
+      <div className="flex flex-col items-center mb-8 text-center">
+        <div className="relative mb-5 p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800/50">
           <Image 
             src={logoImage} 
-            alt="Logo PPI" 
-            width={80} 
-            height={80} 
-            className="object-contain drop-shadow-xl" 
+            alt="Logo Inmedika" 
+            width={140} // Ukuran diperbesar maksimal dari 80px ke 140px
+            height={140} 
+            className="object-contain" 
             priority 
             unoptimized={true} 
           />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-1 relative z-10">PPI/IPCN System</h2>
-        <p className="text-white/80 text-sm relative z-10">Sistem Surveilans Infeksi Rumah Sakit</p>
+        <h2 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight leading-none">
+          PPI <span className="text-emerald-600">IPCN</span> System
+        </h2>
+        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mt-2.5">
+          Sistem Surveilans Infeksi Rumah Sakit
+        </p>
       </div>
 
-      <div className="p-8">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg text-center font-medium">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="username">
-              Username
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-slate-400" />
+      {/* KOTAK UTAMA FORM (CLEAN & TIDAK ADA TEKS BERULANG) */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800/80 overflow-hidden transition-all">
+        <div className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm rounded-xl text-center font-semibold">
+                {error}
               </div>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all bg-slate-50 focus:bg-white text-slate-900"
-                placeholder="Masukkan username"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5" htmlFor="password">
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="h-5 w-5 text-slate-400" />
-              </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all bg-slate-50 focus:bg-white text-slate-900"
-                placeholder="Masukkan password"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)] transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Masuk...
-              </>
-            ) : (
-              "Login"
             )}
-          </button>
-        </form>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5" htmlFor="username">
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  className="block w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm placeholder-slate-400"
+                  placeholder="Masukkan username Anda"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5" htmlFor="password">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="block w-full pl-11 pr-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all bg-slate-50 dark:bg-slate-800/50 focus:bg-white dark:focus:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm placeholder-slate-400"
+                  placeholder="Masukkan password Anda"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-4 shadow-emerald-600/10"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Memproses Masuk...
+                </>
+              ) : (
+                "Masuk ke Sistem"
+              )}
+            </button>
+          </form>
+        </div>
       </div>
+
     </div>
   );
 }

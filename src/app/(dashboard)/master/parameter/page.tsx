@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ParameterForm } from "@/components/master/ParameterForm";
 import { DeleteParameterButton } from "@/components/master/DeleteParameterButton";
+import { EditParameterButton } from "@/components/master/EditParameterButton";
 import { toggleParameterStatus } from "@/app/actions/parameter";
 import { SlidersHorizontal } from "lucide-react";
 
@@ -50,6 +51,7 @@ export default async function MasterParameterPage() {
               <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                 <th className="px-5 py-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nama Parameter</th>
                 <th className="px-5 py-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Kategori</th>
+                <th className="px-5 py-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Target</th>
                 <th className="px-5 py-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Status</th>
                 <th className="px-5 py-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">Aksi</th>
               </tr>
@@ -74,6 +76,9 @@ export default async function MasterParameterPage() {
                           Base Denominator
                         </span>
                       )}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">
+                      {param.targetKepatuhan !== null ? `${param.targetKepatuhan}%` : "—"}
                     </td>
                     <td className="px-5 py-3">
                       <span className={`px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border border-white/20 ${
@@ -103,6 +108,7 @@ export default async function MasterParameterPage() {
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-center gap-2">
+                        <EditParameterButton parameter={param} />
                         <DeleteParameterButton id={param.id} />
                       </div>
                     </td>

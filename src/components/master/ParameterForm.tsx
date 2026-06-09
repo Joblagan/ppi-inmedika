@@ -94,6 +94,22 @@ export function ParameterForm() {
               </select>
             </div>
 
+            <div>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                Target Kepatuhan (%)
+              </label>
+              <input
+                type="number"
+                name="targetKepatuhan"
+                min={0}
+                max={100}
+                placeholder="Cth: 85"
+                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-emerald-600/10 focus:border-emerald-600 outline-none transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-medium"
+                disabled={isPending}
+              />
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Opsional. Masukkan target kepatuhan untuk parameter ini jika relevan.</p>
+            </div>
+
             {/* Checkbox Base Denominator (Sudah Support Dark Mode & Hover Effect) */}
             <label className="flex items-start gap-3 p-4 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-xl cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700/50 transition-all group">
               <input 

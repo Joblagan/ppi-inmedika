@@ -33,9 +33,15 @@ export async function createParameter(data: FormData) {
   const nama = data.get("nama") as string;
   const kategoriStr = data.get("kategori") as string;
   const isBaseDenominator = data.get("isBaseDenominator") === "true";
+  const targetKepatuhanRaw = data.get("targetKepatuhan") as string;
+  const targetKepatuhan = targetKepatuhanRaw ? Number(targetKepatuhanRaw) : null;
 
   if (!nama || nama.trim() === "" || !kategoriStr) {
     return { error: "Nama dan Kategori wajib diisi." };
+  }
+
+  if (targetKepatuhan !== null && (isNaN(targetKepatuhan) || targetKepatuhan < 0 || targetKepatuhan > 100)) {
+    return { error: "Target kepatuhan harus antara 0 dan 100." };
   }
 
   const cleanName = nama.trim();
@@ -57,7 +63,8 @@ export async function createParameter(data: FormData) {
             isAktif: true,
             nama: cleanName, // Update dengan tulisan yang baru diketik
             kategori: kategoriStr as ParameterCategory,
-            isBaseDenominator
+            isBaseDenominator,
+            targetKepatuhan,
           }
         });
         revalidatePath("/master/parameter");
@@ -71,7 +78,8 @@ export async function createParameter(data: FormData) {
       data: {
         nama: cleanName,
         kategori: kategoriStr as ParameterCategory,
-        isBaseDenominator
+        isBaseDenominator,
+        targetKepatuhan,
       }
     });
 
@@ -98,6 +106,55 @@ export async function toggleParameterStatus(id: string, currentAktif: boolean) {
     return { success: true };
   } catch (error) {
     return { error: "Gagal merubah status" };
+  }
+}
+
+export async function updateParameter(data: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "SUPER_ADMIN") {
+    return { error: "Akses Ditolak" };
+  }
+
+  const id = data.get("id") as string;
+  const nama = (data.get("nama") as string)?.trim();
+  const kategoriStr = data.get("kategori") as string;
+  const isBaseDenominator = data.get("isBaseDenominator") === "true";
+  const targetKepatuhanRaw = data.get("targetKepatuhan") as string;
+  const targetKepatuhan = targetKepatuhanRaw ? Number(targetKepatuhanRaw) : null;
+
+  if (!id || !nama || !kategoriStr) {
+    return { error: "Semua kolom wajib diisi." };
+  }
+
+  if (targetKepatuhan !== null && (isNaN(targetKepatuhan) || targetKepatuhan < 0 || targetKepatuhan > 100)) {
+    return { error: "Target kepatuhan harus antara 0 dan 100." };
+  }
+
+  const existing = await prisma.masterParameter.findFirst({
+    where: {
+      nama: { equals: nama, mode: "insensitive" },
+    },
+  });
+
+  if (existing && existing.id !== id) {
+    return { error: "Nama parameter sudah digunakan." };
+  }
+
+  try {
+    await prisma.masterParameter.update({
+      where: { id },
+      data: {
+        nama,
+        kategori: kategoriStr as ParameterCategory,
+        isBaseDenominator,
+        targetKepatuhan,
+      },
+    });
+    revalidatePath("/master/parameter");
+    return { success: true };
+  } catch (error) {
+    console.error("Gagal mengupdate parameter:", error);
+    return { error: "Gagal memperbarui parameter." };
   }
 }
 

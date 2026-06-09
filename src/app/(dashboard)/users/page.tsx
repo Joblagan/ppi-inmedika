@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getUsers, getRooms } from "@/app/actions/user";
 import { UserForm } from "@/components/users/UserForm";
-import { DeleteUserButton, ResetPasswordButton } from "@/components/users/UserActionButtons";
+import { DeleteUserButton, ResetPasswordButton, EditUserButton } from "@/components/users/UserActionButtons";
 import { Users, Building2 } from "lucide-react";
 
 export const metadata = {
@@ -108,6 +108,7 @@ export default async function UsersPage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-center gap-1">
+                          <EditUserButton user={user} rooms={rooms} />
                           <ResetPasswordButton userId={user.id} />
                           <DeleteUserButton userId={user.id} selfId={session.user.id} />
                         </div>

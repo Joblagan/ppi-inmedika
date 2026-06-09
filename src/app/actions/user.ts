@@ -74,6 +74,42 @@ export async function createUser(formData: FormData) {
   }
 }
 
+export async function updateUser(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "SUPER_ADMIN") {
+    return { error: "Akses Ditolak" };
+  }
+
+  const userId = formData.get("userId") as string;
+  const name = (formData.get("name") as string)?.trim();
+  const role = formData.get("role") as Role;
+  const roomId = (formData.get("roomId") as string) || null;
+
+  if (!userId || !name || !role) {
+    return { error: "Semua kolom wajib diisi." };
+  }
+
+  if (role === "USER_RUANGAN" && !roomId) {
+    return { error: "Perawat (USER_RUANGAN) wajib dipilihkan ruangan." };
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        role,
+        roomId: role === "USER_RUANGAN" ? roomId : null,
+      },
+    });
+    revalidatePath("/users");
+    return { success: true };
+  } catch (e) {
+    console.error("Gagal mengupdate pengguna:", e);
+    return { error: "Gagal memperbarui data pengguna." };
+  }
+}
+
 export async function resetUserPassword(userId: string, newPassword: string) {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "SUPER_ADMIN") {

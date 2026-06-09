@@ -77,6 +77,7 @@ model MasterParameter {
   kategori          ParameterCategory
   isAktif           Boolean  @default(true)
   isBaseDenominator Boolean  @default(false)
+  targetKepatuhan   Int?
 
   sensusDetails SensusDetail[]
 

@@ -10,20 +10,16 @@ export const metadata = {
   title: "Audit Kepatuhan | PPI/IPCN",
 };
 
-export default async function AuditPage() {
+export default async function AuditPage({ searchParams }: { searchParams?: { month?: string; roomId?: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const rooms = await prisma.room.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
-  const audits = await getAudits();
+  const { month, roomId } = searchParams ?? {};
+  const { audits, totalPeluang, totalBenar, kepatuhanRate } = await getAudits({ month, roomId });
 
-  const now = new Date();
+  const now = month ? new Date(`${month}-01`) : new Date();
   const monthLabel = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-
-  // Hitung agregat kepatuhan bulan ini
-  const totalPeluang = audits.reduce((s, a) => s + a.peluang, 0);
-  const totalBenar = audits.reduce((s, a) => s + a.tindakanBenar, 0);
-  const kepatuhanRate = totalPeluang > 0 ? Math.round((totalBenar / totalPeluang) * 100) : 0;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-6xl mx-auto">
@@ -41,6 +37,41 @@ export default async function AuditPage() {
         </div>
         <AuditForm rooms={rooms} userRoomId={session.user.roomId} />
       </header>
+
+      <div className="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+        <form method="get" className="grid grid-cols-1 md:grid-cols-[220px_220px_auto] gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Bulan</label>
+            <input
+              type="month"
+              name="month"
+              defaultValue={searchParams?.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-slate-800 dark:text-slate-100 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Ruangan</label>
+            <select
+              name="roomId"
+              defaultValue={roomId ?? ""}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-slate-800 dark:text-slate-100 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+            >
+              <option value="">Semua Ruangan</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id} className="capitalize">{room.name.toLowerCase()}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-3">
+            <button type="submit" className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 py-3 font-semibold transition-all">
+              Terapkan Filter
+            </button>
+            <a href="/audit" className="w-full md:w-auto text-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+              Reset
+            </a>
+          </div>
+        </form>
+      </div>
 
       {/* Summary Card */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">

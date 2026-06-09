@@ -59,24 +59,48 @@ export async function deleteInfection(id: string) {
   }
 }
 
-export async function getInfections({ month, year }: { month?: number; year?: number } = {}) {
+export async function getInfections({ month, roomId }: { month?: string; roomId?: string } = {}) {
   const now = new Date();
-  const m = month ?? now.getMonth();
-  const y = year ?? now.getFullYear();
-
-  const startDate = new Date(Date.UTC(y, m, 1));
-  const endDate = new Date(Date.UTC(y, m + 1, 0));
+  const [year, monthNumber] = month ? month.split("-").map(Number) : [now.getFullYear(), now.getMonth() + 1];
+  const startDate = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const endDate = new Date(Date.UTC(year, monthNumber, 0));
 
   try {
-    return await prisma.infectionIncident.findMany({
+    const incidents = await prisma.infectionIncident.findMany({
       where: {
         deletedAt: null,
         date: { gte: startDate, lte: endDate },
+        ...(roomId ? { roomId } : {}),
       },
       include: { room: true, createdBy: { select: { name: true } } },
       orderBy: { date: "desc" },
     });
+
+    const baseDenominatorResult = await prisma.sensusDetail.aggregate({
+      _sum: { value: true },
+      where: {
+        sensusHarian: {
+          date: { gte: startDate, lte: endDate },
+          ...(roomId ? { roomId } : {}),
+        },
+        parameter: {
+          isBaseDenominator: true,
+          deletedAt: null,
+        },
+      },
+    });
+
+    const totalBaseDenominator = baseDenominatorResult._sum.value ?? 0;
+    const ratePer1000 = totalBaseDenominator > 0 ? Math.round((incidents.length / totalBaseDenominator) * 1000) : 0;
+
+    return {
+      incidents,
+      totalIncidents: incidents.length,
+      totalBaseDenominator,
+      ratePer1000,
+    };
   } catch (e) {
-    return [];
+    console.error("Failed to fetch infections:", e);
+    return { incidents: [], totalIncidents: 0, totalBaseDenominator: 0, ratePer1000: 0 };
   }
 }

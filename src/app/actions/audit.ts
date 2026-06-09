@@ -46,25 +46,31 @@ export async function createAudit(formData: FormData) {
   }
 }
 
-export async function getAudits({ month, year }: { month?: number; year?: number } = {}) {
+export async function getAudits({ month, roomId }: { month?: string; roomId?: string } = {}) {
   const now = new Date();
-  const m = month ?? now.getMonth();
-  const y = year ?? now.getFullYear();
-
-  const startDate = new Date(Date.UTC(y, m, 1));
-  const endDate = new Date(Date.UTC(y, m + 1, 0));
+  const [year, monthNumber] = month ? month.split("-").map(Number) : [now.getFullYear(), now.getMonth() + 1];
+  const startDate = new Date(Date.UTC(year, monthNumber - 1, 1));
+  const endDate = new Date(Date.UTC(year, monthNumber, 0));
 
   try {
-    return await prisma.auditKepatuhan.findMany({
+    const audits = await prisma.auditKepatuhan.findMany({
       where: {
         deletedAt: null,
         date: { gte: startDate, lte: endDate },
+        ...(roomId ? { roomId } : {}),
       },
       include: { room: true, createdBy: { select: { name: true } } },
       orderBy: { date: "desc" },
     });
+
+    const totalPeluang = audits.reduce((sum, audit) => sum + audit.peluang, 0);
+    const totalBenar = audits.reduce((sum, audit) => sum + audit.tindakanBenar, 0);
+    const kepatuhanRate = totalPeluang > 0 ? Math.round((totalBenar / totalPeluang) * 100) : 0;
+
+    return { audits, totalPeluang, totalBenar, kepatuhanRate };
   } catch (e) {
-    return [];
+    console.error("Failed to fetch audits:", e);
+    return { audits: [], totalPeluang: 0, totalBenar: 0, kepatuhanRate: 0 };
   }
 }
 

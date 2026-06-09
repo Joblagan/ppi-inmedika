@@ -21,14 +21,15 @@ const infectionLabels: Record<string, { label: string; cls: string }> = {
   DEKUBITUS: { label: "Dekubitus", cls: "bg-slate-100 text-slate-700" },
 };
 
-export default async function InfectionsPage() {
+export default async function InfectionsPage({ searchParams }: { searchParams?: { month?: string; roomId?: string } }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const rooms = await prisma.room.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
-  const incidents = await getInfections();
+  const { month, roomId } = searchParams ?? {};
+  const { incidents, totalIncidents, totalBaseDenominator, ratePer1000 } = await getInfections({ month, roomId });
 
-  const now = new Date();
+  const now = month ? new Date(`${month}-01`) : new Date();
   const monthLabel = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
 
   return (
@@ -45,6 +46,56 @@ export default async function InfectionsPage() {
         </div>
         <InfectionForm rooms={rooms} userRoomId={session.user.roomId} />
       </header>
+
+      <div className="mb-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+        <form method="get" className="grid grid-cols-1 md:grid-cols-[220px_220px_auto] gap-4 items-end">
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Bulan</label>
+            <input
+              type="month"
+              name="month"
+              defaultValue={searchParams?.month ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-slate-800 dark:text-slate-100 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Ruangan</label>
+            <select
+              name="roomId"
+              defaultValue={roomId ?? ""}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-slate-800 dark:text-slate-100 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+            >
+              <option value="">Semua Ruangan</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id} className="capitalize">{room.name.toLowerCase()}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-3">
+            <button type="submit" className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-3 font-semibold transition-all">
+              Terapkan Filter
+            </button>
+            <a href="/infections" className="w-full md:w-auto text-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+              Reset
+            </a>
+          </div>
+        </form>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 transition-colors">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Insiden</p>
+          <p className="text-3xl font-black text-slate-800 dark:text-slate-100 mt-1">{totalIncidents}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 transition-colors">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Denominator Dasar</p>
+          <p className="text-3xl font-black text-rose-600 dark:text-rose-400 mt-1">{totalBaseDenominator}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 transition-colors">
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rate per 1000</p>
+          <p className="text-3xl font-black text-red-600 dark:text-red-400 mt-1">{ratePer1000}</p>
+        </div>
+      </div>
 
       {incidents.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-16 flex flex-col items-center text-center mt-6">

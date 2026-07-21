@@ -2,24 +2,33 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { ComplianceBarChart, HaisPieChart, SensusLineChart } from "@/components/presentation/Charts";
+import { ComplianceBarChart, HaisPieChart, SensusLineChart, IncidenceRateBarChart } from "@/components/presentation/Charts";
 import { Activity, ShieldCheck, Users, ClipboardList, TrendingDown, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { ExportPdfButton } from "@/components/presentation/ExportPdfButton";
+import { ExportExcelButton } from "@/components/presentation/ExportExcelButton";
+import { DateRoomFilter } from "@/components/layout/DateRoomFilter";
 
 export const metadata = {
   title: "Mode Presentasi | PPI/IPCN",
 };
 
-export default async function PresentationPage() {
+export default async function PresentationPage({ searchParams }: { searchParams: { [key: string]: string | undefined } }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
   const now = new Date();
-  const monthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-  const monthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0));
-  const monthLabel = now.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  
+  const queryMonth = searchParams.month ? parseInt(searchParams.month) : now.getMonth() + 1;
+  const queryYear = searchParams.year ? parseInt(searchParams.year) : now.getFullYear();
+  const queryRoomId = searchParams.roomId;
+
+  const monthStart = new Date(Date.UTC(queryYear, queryMonth - 1, 1));
+  const monthEnd = new Date(Date.UTC(queryYear, queryMonth, 0));
+  const monthLabel = monthStart.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+
+  const roomFilter = queryRoomId ? { roomId: queryRoomId } : {};
 
   // ===== DATA QUERIES =====
   const [
@@ -31,17 +40,25 @@ export default async function PresentationPage() {
   ] = await Promise.all([
     prisma.room.count({ where: { deletedAt: null } }),
     prisma.infectionIncident.findMany({
-      where: { deletedAt: null, date: { gte: monthStart, lte: monthEnd } },
+      where: { deletedAt: null, date: { gte: monthStart, lte: monthEnd }, ...roomFilter },
     }),
     prisma.auditKepatuhan.findMany({
-      where: { deletedAt: null, date: { gte: monthStart, lte: monthEnd } },
+      where: { deletedAt: null, date: { gte: monthStart, lte: monthEnd }, ...roomFilter },
       include: { room: true },
     }),
     prisma.sensusHarian.findMany({
-      where: { deletedAt: null, date: { gte: new Date(Date.now() - 14 * 86400000) } },
+      where: { deletedAt: null, date: { gte: new Date(Date.now() - 14 * 86400000) }, ...roomFilter },
       select: { date: true },
     }),
     prisma.room.findMany({ where: { deletedAt: null }, select: { id: true, name: true } }),
+    prisma.sensusDetail.groupBy({
+      by: ['parameterId'],
+      _sum: { value: true },
+      where: { 
+        sensusHarian: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null, ...roomFilter }
+      }
+    }),
+    prisma.masterParameter.findMany({ select: { id: true, nama: true } }),
   ]);
 
   const haisBreakdown = Object.entries(
@@ -71,6 +88,41 @@ export default async function PresentationPage() {
     date, submitted, total: totalRooms
   }));
 
+  // === INCIDENCE RATE CALCULATION ===
+  const parameterMap = new Map(masterParameters.map(p => [p.id, p.nama]));
+  const denominatorMap = new Map<string, number>();
+  sensusDetailsGrouped.forEach(d => {
+    const paramName = parameterMap.get(d.parameterId);
+    if (paramName && d._sum.value !== null) {
+      denominatorMap.set(paramName, d._sum.value);
+    }
+  });
+
+  const haisMapping: Record<string, string> = {
+    VAP: 'VENTILATOR (VAP)',
+    IAD: 'VENA SENTRAL (IAD)',
+    PHLEBITIS: 'INFUS (PHLEBITIS)',
+    ISK: 'KATETER URINE (ISK)',
+    HAP: 'TOTAL PASIEN (HARI RAWAT)',
+    IDO: 'LUKA OPERASI (IDO)', 
+    DEKUBITUS: 'TOTAL PASIEN (HARI RAWAT)'
+  };
+
+  const incidenceRateData = Object.entries(
+    haisRaw.reduce<Record<string, number>>((acc, i) => {
+      acc[i.infectionType] = (acc[i.infectionType] || 0) + 1;
+      return acc;
+    }, {})
+  ).map(([name, count]) => {
+    const paramName = haisMapping[name];
+    const denominator = paramName ? (denominatorMap.get(paramName) || 0) : 0;
+    let rate = 0;
+    if (denominator > 0) {
+      rate = name === 'IDO' ? (count / denominator) * 100 : (count / denominator) * 1000;
+    }
+    return { name, rate };
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-10 transition-colors duration-300">
       
@@ -84,6 +136,7 @@ export default async function PresentationPage() {
           </Link>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <ExportExcelButton />
             <ExportPdfButton targetId="laporan-ppi" monthLabel={monthLabel} />
           </div>
         </div>
@@ -107,6 +160,10 @@ export default async function PresentationPage() {
             </div>
           </div>
         </header>
+
+        <div className="no-print">
+          <DateRoomFilter rooms={rooms} />
+        </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -156,14 +213,31 @@ export default async function PresentationPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-lg dark:shadow-black/20 mb-8 transition-colors">
-          <h2 className="text-slate-800 dark:text-white font-bold text-lg mb-1">Tren Pelaporan Sensus Harian</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-xs mb-6">14 hari terakhir · Menampilkan tingkat kedisiplinan perawat ruangan</p>
-          {sensusChartData.length > 0 ? (
-            <SensusLineChart data={sensusChartData} />
-          ) : (
-            <div className="h-52 flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">Belum ada data sensus 14 hari terakhir</div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-lg dark:shadow-black/20 mb-8 transition-colors">
+            <h2 className="text-slate-800 dark:text-white font-bold text-lg mb-1">Tren Pelaporan Sensus Harian</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mb-6">14 hari terakhir · Menampilkan tingkat kedisiplinan perawat ruangan</p>
+            {sensusChartData.length > 0 ? (
+              <SensusLineChart data={sensusChartData} />
+            ) : (
+              <div className="h-52 flex items-center justify-center text-slate-400 text-sm border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">Belum ada data sensus 14 hari terakhir</div>
+            )}
+          </div>
+          
+          <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm dark:shadow-lg dark:shadow-black/20 mb-8 transition-colors">
+            <h2 className="text-slate-800 dark:text-white font-bold text-lg mb-1">Incidence Rate HAIs (Permil ‰)</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mb-6">Berdasarkan rasio infeksi per hari pemakaian alat (device days)</p>
+            {incidenceRateData.length > 0 ? (
+              <IncidenceRateBarChart data={incidenceRateData} />
+            ) : (
+              <div className="h-52 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 gap-3 border border-dashed border-emerald-200 dark:border-emerald-900/50 rounded-xl bg-emerald-50 dark:bg-emerald-900/10">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+                  <TrendingDown className="w-8 h-8" />
+                </div>
+                <span className="font-bold text-sm tracking-wide">Zero HAIs Month! 🎉</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <footer className="text-center text-slate-500 dark:text-slate-600 text-xs font-medium border-t border-slate-200 dark:border-slate-800 pt-6 mt-8">

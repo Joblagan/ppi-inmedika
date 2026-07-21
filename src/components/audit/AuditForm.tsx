@@ -133,6 +133,10 @@ export function AuditForm({ rooms, userRoomId }: { rooms: Room[]; userRoomId?: s
               >
                 <option value="HAND_HYGIENE">Kebersihan Tangan</option>
                 <option value="APD">Pemakaian APD</option>
+                <option value="BUNDLE_VAP">Bundle VAP</option>
+                <option value="BUNDLE_ISK">Bundle ISK</option>
+                <option value="BUNDLE_IAD">Bundle IAD</option>
+                <option value="BUNDLE_PLABSI">Bundle PLABSI</option>
               </select>
             </div>
           </div>

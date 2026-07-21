@@ -30,6 +30,10 @@ enum InfectionType {
 enum AuditType {
   HAND_HYGIENE
   APD
+  BUNDLE_VAP
+  BUNDLE_ISK
+  BUNDLE_IAD
+  BUNDLE_PLABSI
 }
 
 model User {

@@ -63,6 +63,48 @@ export function ComplianceBarChart({ data }: { data: { room: string; rate: numbe
   );
 }
 
+export function IncidenceRateBarChart({ data }: { data: { name: string; rate: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} vertical={false} />
+        <XAxis 
+          dataKey="name" 
+          tick={{ fontSize: 12, fontWeight: 500 }} 
+          tickLine={false}
+          axisLine={false}
+          dy={10}
+        />
+        <YAxis 
+          tick={{ fontSize: 12 }} 
+          tickLine={false}
+          axisLine={false}
+          domain={[0, 'dataMax + 1']}
+        />
+        <Tooltip
+          cursor={{ fill: 'transparent' }}
+          contentStyle={{ 
+            borderRadius: '12px', 
+            border: 'none',
+            boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+          }}
+          formatter={(value: any) => [`${typeof value === 'number' ? value.toFixed(2) : 0}‰`, "Incidence Rate"]}
+        />
+        <Bar 
+          dataKey="rate" 
+          radius={[6, 6, 0, 0]} 
+          barSize={40}
+          isAnimationActive={false}
+        >
+          {data.map((_, i) => (
+            <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
 export function HaisPieChart({ data }: { data: { name: string; value: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={260}>

@@ -14,7 +14,8 @@ export const metadata = {
   title: "Mode Presentasi | PPI/IPCN",
 };
 
-export default async function PresentationPage({ searchParams }: { searchParams: { [key: string]: string | undefined } }) {
+export default async function PresentationPage(props: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
+  const searchParams = await props.searchParams;
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 

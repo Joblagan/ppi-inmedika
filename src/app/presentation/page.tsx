@@ -31,6 +31,12 @@ export default async function PresentationPage(props: { searchParams: Promise<{ 
 
   const roomFilter = queryRoomId ? { roomId: queryRoomId } : {};
 
+  const sensusHariansForMonth = await prisma.sensusHarian.findMany({
+    where: { deletedAt: null, date: { gte: monthStart, lte: monthEnd }, ...roomFilter },
+    select: { id: true }
+  });
+  const sensusHarianIds = sensusHariansForMonth.map(s => s.id);
+
   // ===== DATA QUERIES =====
   const [
     totalRooms,
@@ -58,7 +64,7 @@ export default async function PresentationPage(props: { searchParams: Promise<{ 
       by: ['parameterId'],
       _sum: { value: true },
       where: { 
-        sensusHarian: { date: { gte: monthStart, lte: monthEnd }, deletedAt: null, ...roomFilter }
+        sensusHarianId: { in: sensusHarianIds }
       }
     }),
     prisma.masterParameter.findMany({ select: { id: true, nama: true } }),

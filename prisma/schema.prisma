@@ -109,6 +109,7 @@ model SensusHarian {
   deletedAt DateTime? // Soft Delete
 
   @@unique([date, roomId])
+  @@index([date, deletedAt])
 }
 
 model SensusDetail {
@@ -142,6 +143,8 @@ model InfectionIncident {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft Delete
+
+  @@index([date, deletedAt])
 }
 
 model AuditKepatuhan {
@@ -164,6 +167,8 @@ model AuditKepatuhan {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft Delete
+
+  @@index([date, deletedAt])
 }
 
 model AuditTrail {

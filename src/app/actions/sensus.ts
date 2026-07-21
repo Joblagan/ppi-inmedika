@@ -67,6 +67,16 @@ export async function saveSensusHarian(details: SensusDetailInput[]) {
         });
       }
 
+      await tx.auditTrail.create({
+        data: {
+          modelName: "SensusHarian",
+          recordId: sensus.id,
+          action: "UPDATE_DETAILS",
+          newValue: detailData as any,
+          userId: session.user.id,
+        }
+      });
+
       return sensus;
     });
 

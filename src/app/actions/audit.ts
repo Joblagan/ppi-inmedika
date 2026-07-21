@@ -16,6 +16,16 @@ export async function createAudit(formData: FormData) {
   const tindakanBenar = parseInt(formData.get("tindakanBenar") as string, 10);
   const notes = (formData.get("notes") as string)?.trim();
   const roomId = (formData.get("roomId") as string) || session.user.roomId;
+  const detailsStr = formData.get("details") as string;
+  let details = null;
+  
+  if (detailsStr) {
+    try {
+      details = JSON.parse(detailsStr);
+    } catch (e) {
+      console.error("Gagal parse details JSON");
+    }
+  }
 
   if (!date || !auditType || isNaN(peluang) || isNaN(tindakanBenar) || !roomId) {
     return { error: "Semua kolom wajib diisi." };
@@ -27,17 +37,29 @@ export async function createAudit(formData: FormData) {
   const normalizedDate = new Date(`${date}T00:00:00.000Z`);
 
   try {
-    await prisma.auditKepatuhan.create({
+    const newAudit = await prisma.auditKepatuhan.create({
       data: {
         date: normalizedDate,
         auditType,
         peluang,
         tindakanBenar,
+        details,
         notes: notes || null,
         roomId,
         createdById: session.user.id,
       },
     });
+
+    await prisma.auditTrail.create({
+      data: {
+        modelName: "AuditKepatuhan",
+        recordId: newAudit.id,
+        action: "CREATE",
+        newValue: JSON.parse(JSON.stringify(newAudit)),
+        userId: session.user.id,
+      }
+    });
+
     revalidatePath("/audit");
     return { success: true };
   } catch (e) {

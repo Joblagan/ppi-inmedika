@@ -17,7 +17,9 @@ import {
   Building2,
   SlidersHorizontal,
   Menu, // Icon Hamburger
-  X     // Icon Close
+  X,    // Icon Close
+  Activity,
+  ShieldAlert
 } from "lucide-react";
 
 export function Sidebar() {
@@ -47,6 +49,9 @@ export function Sidebar() {
         { name: "Sensus Harian", href: "/sensus/input", icon: ClipboardList },
         { name: "Kejadian Infeksi", href: "/infections", icon: AlertTriangle },
         { name: "Audit Kepatuhan", href: "/audit", icon: ShieldCheck },
+        { name: "Kurva Epidemiologi", href: "/epidemiologi", icon: Activity },
+        { name: "ICRA Bangunan", href: "/icra/bangunan", icon: Building2 },
+        { name: "ICRA Program", href: "/icra/program", icon: ShieldAlert },
         { name: "Mode Presentasi", href: "/presentation", icon: Presentation },
       ];
     }

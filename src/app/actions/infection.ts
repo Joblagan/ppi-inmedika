@@ -24,7 +24,7 @@ export async function createInfection(formData: FormData) {
   const normalizedDate = new Date(`${date}T00:00:00.000Z`);
 
   try {
-    await prisma.infectionIncident.create({
+    const newInfection = await prisma.infectionIncident.create({
       data: {
         date: normalizedDate,
         patientMrn,
@@ -35,6 +35,17 @@ export async function createInfection(formData: FormData) {
         createdById: session.user.id,
       },
     });
+
+    await prisma.auditTrail.create({
+      data: {
+        modelName: "InfectionIncident",
+        recordId: newInfection.id,
+        action: "CREATE",
+        newValue: JSON.parse(JSON.stringify(newInfection)),
+        userId: session.user.id,
+      }
+    });
+
     revalidatePath("/infections");
     return { success: true };
   } catch (e) {
@@ -48,10 +59,25 @@ export async function deleteInfection(id: string) {
   if (!session?.user) return { error: "Unauthenticated" };
 
   try {
+    const oldRecord = await prisma.infectionIncident.findUnique({ where: { id } });
+    
     await prisma.infectionIncident.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
+
+    if (oldRecord) {
+      await prisma.auditTrail.create({
+        data: {
+          modelName: "InfectionIncident",
+          recordId: id,
+          action: "DELETE",
+          oldValue: JSON.parse(JSON.stringify(oldRecord)),
+          userId: session.user.id,
+        }
+      });
+    }
+
     revalidatePath("/infections");
     return { success: true };
   } catch (e) {

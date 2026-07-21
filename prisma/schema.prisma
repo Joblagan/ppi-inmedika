@@ -50,6 +50,8 @@ model User {
   infections    InfectionIncident[]
   audits        AuditKepatuhan[]
   auditTrails   AuditTrail[]
+  icraBangunans IcraBangunan[]
+  icraPrograms  IcraProgram[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -155,9 +157,10 @@ model AuditKepatuhan {
 
   auditType AuditType
 
-  // Tally Counter
+  // Tally Counter & Details
   peluang       Int @default(0) // Denominator: Momen yang harusnya patuh
   tindakanBenar Int @default(0) // Numerator: Momen yang benar-benar patuh
+  details       Json? // Menyimpan breakdown checklist jawaban (Ya/Tidak/NA)
 
   notes String?
 
@@ -185,4 +188,45 @@ model AuditTrail {
 
   createdAt DateTime @default(now())
   // No soft delete for Audit Trails as they are immutable logs.
+}
+
+model IcraBangunan {
+  id               String   @id @default(uuid())
+  projectGroup     String   // Tipe Proyek Konstruksi (A, B, C, D)
+  riskGroup        String   // Kelompok Risiko (Rendah, Sedang, Tinggi, Sangat Tinggi)
+  kelasKewaspadaan String   // Kelas I, II, III, IV
+  
+  description      String?
+  startDate        DateTime @db.Date
+  endDate          DateTime @db.Date
+  
+  createdById      String
+  createdBy        User     @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
+}
+
+model IcraProgram {
+  id              String   @id @default(uuid())
+  tahun           Int
+  jenisRisiko     String
+  
+  // Scoring parameters (1-5 or 1-4 scales depending on standard, usually 1-4 or 1-5)
+  probabilitas    Int
+  dampak          Int
+  sistemYangAda   Int
+  
+  skorPrioritas   Int      // probabilitas * dampak * sistemYangAda
+  
+  tujuan          String?
+  strategi        String?
+
+  createdById     String
+  createdBy       User     @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft Delete
 }

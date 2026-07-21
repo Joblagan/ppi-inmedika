@@ -21,9 +21,10 @@ const infectionLabels: Record<string, { label: string; cls: string }> = {
   DEKUBITUS: { label: "Dekubitus", cls: "bg-slate-100 text-slate-700" },
 };
 
-export default async function InfectionsPage({ searchParams }: { searchParams?: { month?: string; roomId?: string } }) {
+export default async function InfectionsPage(props: { searchParams?: Promise<{ month?: string; roomId?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
+  const searchParams = await props.searchParams;
 
   const rooms = await prisma.room.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
   const { month, roomId } = searchParams ?? {};

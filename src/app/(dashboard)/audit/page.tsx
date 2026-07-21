@@ -10,9 +10,10 @@ export const metadata = {
   title: "Audit Kepatuhan | PPI/IPCN",
 };
 
-export default async function AuditPage({ searchParams }: { searchParams?: { month?: string; roomId?: string } }) {
+export default async function AuditPage(props: { searchParams?: Promise<{ month?: string; roomId?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
+  const searchParams = await props.searchParams;
 
   const rooms = await prisma.room.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
   const { month, roomId } = searchParams ?? {};

@@ -37,6 +37,8 @@ export default async function PresentationPage({ searchParams }: { searchParams:
     auditRaw,
     sensusRaw,
     rooms,
+    sensusDetailsGrouped,
+    masterParameters,
   ] = await Promise.all([
     prisma.room.count({ where: { deletedAt: null } }),
     prisma.infectionIncident.findMany({

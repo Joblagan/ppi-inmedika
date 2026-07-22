@@ -39,7 +39,6 @@ export function Sidebar() {
   const getMenu = () => {
     const common = [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
-      { name: "Buku Panduan", href: "/panduan", icon: BookOpen },
     ];
 
     if (role === "SUPER_ADMIN") {
@@ -78,7 +77,10 @@ export function Sidebar() {
     return common;
   };
 
-  const menus = getMenu();
+  const menus = [
+    ...getMenu(),
+    { name: "Buku Panduan", href: "/panduan", icon: BookOpen },
+  ];
 
   return (
     <>

@@ -16,10 +16,10 @@ import {
   ShieldCheck,
   Building2,
   SlidersHorizontal,
-  Menu, // Icon Hamburger
   X,    // Icon Close
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  BookOpen
 } from "lucide-react";
 
 export function Sidebar() {
@@ -38,6 +38,7 @@ export function Sidebar() {
   const getMenu = () => {
     const common = [
       { name: "Dashboard", href: "/", icon: LayoutDashboard },
+      { name: "Buku Panduan", href: "/panduan", icon: BookOpen },
     ];
 
     if (role === "SUPER_ADMIN") {

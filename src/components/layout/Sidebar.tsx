@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   Building2,
   SlidersHorizontal,
-  X,    // Icon Close
+  Menu,
+  X,
   Activity,
   ShieldAlert,
   BookOpen
